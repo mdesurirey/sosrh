@@ -1,150 +1,136 @@
-import { useEffect, useRef, useState } from "react";
-import { Clock, DollarSign, TrendingDown, TrendingUp, BarChart3 } from "lucide-react";
-import type { CalculatorResults } from "@/lib/calculator";
+import { useEffect, useState } from "react";
+import { Button } from "@/components/ui/button";
+import { Lock, TrendingUp, Clock, Euro, ArrowRight } from "lucide-react";
+import type { ScoreResult } from "@/lib/scoring";
 
 interface Props {
-  results: CalculatorResults;
+  result: ScoreResult;
+  onUnlock: () => void;
 }
 
-function AnimatedNumber({ value, suffix = "", prefix = "" }: { value: number; suffix?: string; prefix?: string }) {
-  const [displayed, setDisplayed] = useState(0);
-  const ref = useRef<HTMLSpanElement>(null);
-
+function ScoreGauge({ score }: { score: number }) {
+  const [display, setDisplay] = useState(0);
   useEffect(() => {
-    let start = 0;
-    const duration = 1200;
-    const startTime = performance.now();
-
-    const animate = (now: number) => {
-      const elapsed = now - startTime;
-      const progress = Math.min(elapsed / duration, 1);
-      const eased = 1 - Math.pow(1 - progress, 3);
-      start = Math.round(value * eased);
-      setDisplayed(start);
-      if (progress < 1) requestAnimationFrame(animate);
+    const duration = 900;
+    const start = performance.now();
+    let raf = 0;
+    const tick = (t: number) => {
+      const p = Math.min((t - start) / duration, 1);
+      setDisplay(Math.round(score * (1 - Math.pow(1 - p, 3))));
+      if (p < 1) raf = requestAnimationFrame(tick);
     };
+    raf = requestAnimationFrame(tick);
+    return () => cancelAnimationFrame(raf);
+  }, [score]);
 
-    requestAnimationFrame(animate);
-  }, [value]);
-
-  return (
-    <span ref={ref} className="tabular-nums">
-      {prefix}{displayed.toLocaleString("fr-FR")}{suffix}
-    </span>
-  );
-}
-
-function MaturityGauge({ score, level }: { score: number; level: string }) {
-  const getColor = () => {
-    if (score < 35) return "text-destructive";
-    if (score < 65) return "text-warning";
-    return "text-success";
-  };
+  const radius = 90;
+  const circumference = 2 * Math.PI * radius;
+  const offset = circumference - (display / 100) * circumference;
+  const color =
+    score < 35 ? "hsl(0 70% 55%)" : score < 55 ? "hsl(38 90% 50%)" : score < 75 ? "hsl(210 90% 50%)" : "hsl(152 55% 40%)";
 
   return (
-    <div className="flex flex-col items-center gap-3">
-      <div className="relative w-32 h-16 overflow-hidden">
-        <svg viewBox="0 0 100 50" className="w-full h-full">
-          <path d="M 5 50 A 45 45 0 0 1 95 50" fill="none" stroke="hsl(var(--muted))" strokeWidth="8" strokeLinecap="round" />
-          <path
-            d="M 5 50 A 45 45 0 0 1 95 50"
-            fill="none"
-            stroke="currentColor"
-            strokeWidth="8"
-            strokeLinecap="round"
-            strokeDasharray={`${(score / 100) * 141.37} 141.37`}
-            className={`${getColor()} transition-all duration-1000`}
-          />
-        </svg>
-        <div className="absolute inset-0 flex items-end justify-center pb-0">
-          <span className={`text-xl font-bold ${getColor()}`}>{score}</span>
-        </div>
+    <div className="relative w-56 h-56 mx-auto">
+      <svg className="w-full h-full -rotate-90" viewBox="0 0 200 200">
+        <circle cx="100" cy="100" r={radius} stroke="hsl(var(--secondary))" strokeWidth="14" fill="none" />
+        <circle
+          cx="100"
+          cy="100"
+          r={radius}
+          stroke={color}
+          strokeWidth="14"
+          fill="none"
+          strokeDasharray={circumference}
+          strokeDashoffset={offset}
+          strokeLinecap="round"
+          style={{ transition: "stroke-dashoffset 0.2s linear" }}
+        />
+      </svg>
+      <div className="absolute inset-0 flex flex-col items-center justify-center">
+        <div className="text-5xl font-bold text-navy tabular-nums">{display}</div>
+        <div className="text-sm text-muted-foreground mt-1">sur 100</div>
       </div>
-      <span className="text-sm font-medium text-muted-foreground">{level}</span>
     </div>
   );
 }
 
-const cards = [
-  {
-    icon: Clock,
-    label: "Temps RH annuel estimé",
-    key: "totalAnnualHours" as const,
-    suffix: " h/an",
-    color: "text-primary",
-    bgColor: "bg-accent",
-  },
-  {
-    icon: DollarSign,
-    label: "Coût interne annuel",
-    key: "annualCost" as const,
-    suffix: " €/an",
-    color: "text-destructive",
-    bgColor: "bg-destructive/10",
-  },
-  {
-    icon: TrendingDown,
-    label: "Heures récupérables",
-    key: "recoverableHours" as const,
-    suffix: " h/an",
-    color: "text-success",
-    bgColor: "bg-success/10",
-  },
-  {
-    icon: TrendingUp,
-    label: "Économie potentielle",
-    key: "potentialSavings" as const,
-    prefix: "",
-    suffix: " €/an",
-    color: "text-success",
-    bgColor: "bg-success/10",
-  },
-];
-
-export default function ResultsPreview({ results }: Props) {
+export default function ResultsPreview({ result, onUnlock }: Props) {
   return (
-    <section id="results" className="py-16">
-      <div className="container mx-auto px-4">
-        <div className="max-w-4xl mx-auto">
-          <div className="text-center mb-10">
-            <h2 className="text-2xl md:text-3xl font-bold mb-3">Vos résultats</h2>
-            <p className="text-muted-foreground">
-              Voici une estimation de l'impact de votre gestion RH actuelle.
-            </p>
+    <section className="min-h-screen bg-beige-soft/30 py-12 lg:py-16">
+      <div className="container mx-auto px-4 lg:px-8">
+        <div className="max-w-3xl mx-auto">
+          <div className="text-center mb-10 animate-fade-in-up">
+            <p className="text-xs uppercase tracking-[0.18em] text-sky font-semibold mb-3">Votre score de maturité RH</p>
+            <h1 className="text-3xl md:text-4xl font-bold text-navy mb-3">{result.label}</h1>
+            <p className="text-muted-foreground">Voici un aperçu de votre niveau de structuration RH.</p>
           </div>
 
-          <div className="grid sm:grid-cols-2 gap-5 mb-8">
-            {cards.map((card, i) => (
-              <div
-                key={card.key}
-                className="bg-card rounded-xl shadow-card p-6 animate-fade-in-up"
-                style={{ animationDelay: `${i * 100}ms` }}
-              >
-                <div className="flex items-center gap-3 mb-3">
-                  <div className={`w-10 h-10 rounded-lg ${card.bgColor} flex items-center justify-center`}>
-                    <card.icon className={`w-5 h-5 ${card.color}`} />
+          {/* Score card */}
+          <div className="bg-white rounded-3xl p-8 lg:p-12 shadow-elevated border border-border mb-6 animate-scale-in">
+            <ScoreGauge score={result.total} />
+
+            {/* Sub-scores preview */}
+            <div className="grid sm:grid-cols-2 gap-4 mt-10">
+              {[
+                { label: "Structuration des processus", value: result.subscores.processes },
+                { label: "Conformité RH", value: result.subscores.compliance },
+                { label: "Automatisation", value: result.subscores.automation },
+                { label: "Organisation", value: result.subscores.organization },
+              ].map((s) => (
+                <div key={s.label} className="p-4 rounded-xl bg-secondary/40">
+                  <div className="flex justify-between text-sm mb-2">
+                    <span className="text-muted-foreground">{s.label}</span>
+                    <span className="font-semibold text-navy tabular-nums">{s.value}/100</span>
                   </div>
-                  <span className="text-sm font-medium text-muted-foreground">{card.label}</span>
+                  <div className="h-1.5 bg-white rounded-full overflow-hidden">
+                    <div className="h-full bg-navy rounded-full transition-all duration-700" style={{ width: `${s.value}%` }} />
+                  </div>
                 </div>
-                <p className="text-2xl md:text-3xl font-bold">
-                  <AnimatedNumber value={results[card.key]} suffix={card.suffix} prefix={card.prefix || ""} />
-                </p>
-              </div>
-            ))}
-          </div>
-
-          {/* Maturity */}
-          <div className="bg-card rounded-xl shadow-card p-6 flex flex-col items-center animate-fade-in-up" style={{ animationDelay: "400ms" }}>
-            <div className="flex items-center gap-2 mb-4">
-              <BarChart3 className="w-5 h-5 text-primary" />
-              <span className="text-sm font-semibold">Niveau de maturité RH</span>
+              ))}
             </div>
-            <MaturityGauge score={results.maturityScore} level={results.maturityLevel} />
           </div>
 
-          {/* Insight */}
-          <div className="mt-6 p-4 rounded-lg bg-accent/50 border border-border text-sm text-muted-foreground text-center">
-            Cette estimation est indicative et vise à donner un ordre de grandeur réaliste.
+          {/* KPIs preview */}
+          <div className="grid sm:grid-cols-2 gap-4 mb-8">
+            <div className="bg-white rounded-2xl p-6 border border-border shadow-soft">
+              <div className="flex items-center gap-2 text-muted-foreground text-sm mb-2">
+                <Clock className="w-4 h-4 text-sky" /> Temps administratif récupérable
+              </div>
+              <div className="text-3xl font-bold text-navy tabular-nums">
+                {result.recoverableHours.toLocaleString("fr-FR")} <span className="text-base font-normal text-muted-foreground">h/an</span>
+              </div>
+            </div>
+            <div className="bg-white rounded-2xl p-6 border border-border shadow-soft">
+              <div className="flex items-center gap-2 text-muted-foreground text-sm mb-2">
+                <Euro className="w-4 h-4 text-sky" /> Gain financier estimé
+              </div>
+              <div className="text-3xl font-bold text-navy tabular-nums">
+                {result.potentialSavings.toLocaleString("fr-FR")} <span className="text-base font-normal text-muted-foreground">€/an</span>
+              </div>
+            </div>
+          </div>
+
+          {/* CTA */}
+          <div className="bg-navy rounded-3xl p-8 lg:p-10 text-center text-white relative overflow-hidden">
+            <div className="absolute inset-0 bg-grid opacity-[0.06]" />
+            <div className="relative">
+              <div className="inline-flex items-center gap-2 px-3 py-1 rounded-full bg-white/10 text-xs font-medium mb-4">
+                <TrendingUp className="w-3.5 h-3.5" /> Analyse complète disponible
+              </div>
+              <h2 className="text-2xl md:text-3xl font-bold mb-3 text-white">Débloquez votre rapport détaillé</h2>
+              <p className="text-white/70 mb-7 max-w-lg mx-auto text-sm md:text-base">
+                Analyse processus par processus, opportunités d'automatisation et recommandations personnalisées.
+              </p>
+              <Button
+                onClick={onUnlock}
+                size="lg"
+                className="bg-white text-navy hover:bg-beige rounded-full px-7 h-12 font-medium gap-2 group"
+              >
+                <Lock className="w-4 h-4" />
+                Débloquer mon rapport détaillé
+                <ArrowRight className="w-4 h-4 group-hover:translate-x-0.5 transition" />
+              </Button>
+            </div>
           </div>
         </div>
       </div>

@@ -2,22 +2,8 @@ import { useState } from "react";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
-import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
-import { Checkbox } from "@/components/ui/checkbox";
-import { trackEvent } from "@/lib/calculator";
-import { FileText, Lock } from "lucide-react";
-
-const functions = ["DRH", "RRH", "Office Manager", "Directeur administratif", "Dirigeant / CEO", "DAF", "Autre"];
-const challenges = [
-  "Gagner du temps administratif",
-  "Sécuriser mes procédures RH",
-  "Centraliser mes dossiers salariés",
-  "Structurer la gestion des entretiens",
-  "Mieux gérer les entrées / sorties",
-  "Réduire les erreurs et oublis",
-  "Autre",
-];
-const companySizes = ["1-19", "20-49", "50-99", "100-249", "250+"];
+import { Lock, ShieldCheck } from "lucide-react";
+import { trackEvent } from "@/lib/scoring";
 
 export interface LeadData {
   firstName: string;
@@ -25,44 +11,35 @@ export interface LeadData {
   email: string;
   phone: string;
   company: string;
-  role: string;
-  companySize: string;
-  mainChallenge: string;
-  consent: boolean;
 }
 
 interface Props {
   onSubmit: (data: LeadData) => void;
-  calculatorData?: Record<string, unknown>;
+  context?: Record<string, unknown>;
 }
 
-export default function LeadForm({ onSubmit, calculatorData }: Props) {
+export default function LeadForm({ onSubmit, context }: Props) {
   const [data, setData] = useState<LeadData>({
     firstName: "",
     lastName: "",
     email: "",
     phone: "",
     company: "",
-    role: "",
-    companySize: "",
-    mainChallenge: "",
-    consent: false,
   });
   const [errors, setErrors] = useState<Record<string, string>>({});
+  const [loading, setLoading] = useState(false);
 
-  const update = (field: keyof LeadData, value: string | boolean) => {
-    setData((prev) => ({ ...prev, [field]: value }));
-    setErrors((prev) => ({ ...prev, [field]: "" }));
+  const update = (k: keyof LeadData, v: string) => {
+    setData((p) => ({ ...p, [k]: v }));
+    setErrors((p) => ({ ...p, [k]: "" }));
   };
 
-  const validate = (): boolean => {
+  const validate = () => {
     const e: Record<string, string> = {};
     if (!data.firstName.trim()) e.firstName = "Requis";
     if (!data.lastName.trim()) e.lastName = "Requis";
-    if (!data.email.trim() || !/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(data.email)) e.email = "Email professionnel valide requis";
+    if (!/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(data.email.trim())) e.email = "Email professionnel valide requis";
     if (!data.company.trim()) e.company = "Requis";
-    if (!data.role) e.role = "Requis";
-    if (!data.consent) e.consent = "Requis";
     setErrors(e);
     return Object.keys(e).length === 0;
   };
@@ -70,119 +47,69 @@ export default function LeadForm({ onSubmit, calculatorData }: Props) {
   const handleSubmit = (ev: React.FormEvent) => {
     ev.preventDefault();
     if (!validate()) return;
-    trackEvent("lead_form_submitted", { ...data, ...calculatorData } as Record<string, unknown>);
-    onSubmit(data);
+    setLoading(true);
+    trackEvent("lead_submitted", { ...data, ...context });
+    setTimeout(() => {
+      setLoading(false);
+      onSubmit(data);
+    }, 300);
   };
 
-  const field = (key: keyof LeadData, label: string, placeholder: string, type = "text") => (
-    <div className="space-y-1.5" key={key}>
-      <Label htmlFor={key} className="text-sm font-medium">{label}</Label>
+  const field = (k: keyof LeadData, label: string, type = "text", required = true) => (
+    <div className="space-y-1.5">
+      <Label htmlFor={k} className="text-sm font-medium text-navy">
+        {label} {required && <span className="text-sky">*</span>}
+      </Label>
       <Input
-        id={key}
+        id={k}
         type={type}
-        placeholder={placeholder}
-        value={data[key] as string}
-        onChange={(e) => update(key, e.target.value)}
-        className={`bg-background ${errors[key] ? "border-destructive" : ""}`}
+        value={data[k]}
+        onChange={(e) => update(k, e.target.value)}
+        className={`h-11 rounded-xl bg-white ${errors[k] ? "border-destructive" : ""}`}
       />
-      {errors[key] && <p className="text-xs text-destructive">{errors[key]}</p>}
+      {errors[k] && <p className="text-xs text-destructive">{errors[k]}</p>}
     </div>
   );
 
   return (
-    <section className="py-16 bg-card">
-      <div className="container mx-auto px-4">
-        <div className="max-w-xl mx-auto">
-          {/* Gating header */}
-          <div className="text-center mb-8">
-            <div className="inline-flex items-center gap-2 px-4 py-2 rounded-full bg-accent text-accent-foreground text-sm font-medium mb-4">
-              <FileText className="w-4 h-4" />
-              Rapport détaillé
+    <section className="min-h-screen bg-beige-soft/30 py-16 flex items-center">
+      <div className="container mx-auto px-4 lg:px-8">
+        <div className="max-w-md mx-auto">
+          <div className="text-center mb-8 animate-fade-in-up">
+            <div className="inline-flex items-center gap-2 px-3 py-1.5 rounded-full bg-navy text-white text-xs font-medium mb-5">
+              <Lock className="w-3.5 h-3.5" /> Accès au rapport détaillé
             </div>
-            <h2 className="text-xl md:text-2xl font-bold mb-2">
-              Recevez votre rapport détaillé et vos pistes d'optimisation
-            </h2>
-            <p className="text-sm text-muted-foreground">
-              Renseignez vos coordonnées pour accéder à l'analyse complète.
+            <h1 className="text-2xl md:text-3xl font-bold text-navy mb-3">
+              Recevez votre rapport détaillé
+            </h1>
+            <p className="text-muted-foreground text-sm">
+              Analyse complète, opportunités d'automatisation et recommandations personnalisées.
             </p>
           </div>
 
-          <form onSubmit={handleSubmit} className="bg-background rounded-xl shadow-elevated p-6 md:p-8 space-y-5">
-            <div className="grid sm:grid-cols-2 gap-4">
-              {field("firstName", "Prénom", "Jean")}
-              {field("lastName", "Nom", "Dupont")}
+          <form
+            onSubmit={handleSubmit}
+            className="bg-white rounded-3xl p-7 lg:p-8 shadow-elevated border border-border space-y-4 animate-scale-in"
+          >
+            <div className="grid grid-cols-2 gap-3">
+              {field("firstName", "Prénom")}
+              {field("lastName", "Nom")}
             </div>
-            {field("email", "Email professionnel", "jean@entreprise.fr", "email")}
-            {field("phone", "Téléphone", "06 12 34 56 78", "tel")}
-            {field("company", "Société", "Mon Entreprise SAS")}
-
-            <div className="grid sm:grid-cols-2 gap-4">
-              <div className="space-y-1.5">
-                <Label className="text-sm font-medium">Fonction</Label>
-                <Select value={data.role} onValueChange={(v) => update("role", v)}>
-                  <SelectTrigger className={`bg-background ${errors.role ? "border-destructive" : ""}`}>
-                    <SelectValue placeholder="Sélectionnez" />
-                  </SelectTrigger>
-                  <SelectContent>
-                    {functions.map((f) => (
-                      <SelectItem key={f} value={f}>{f}</SelectItem>
-                    ))}
-                  </SelectContent>
-                </Select>
-                {errors.role && <p className="text-xs text-destructive">{errors.role}</p>}
-              </div>
-              <div className="space-y-1.5">
-                <Label className="text-sm font-medium">Taille de l'entreprise</Label>
-                <Select value={data.companySize} onValueChange={(v) => update("companySize", v)}>
-                  <SelectTrigger className="bg-background">
-                    <SelectValue placeholder="Sélectionnez" />
-                  </SelectTrigger>
-                  <SelectContent>
-                    {companySizes.map((s) => (
-                      <SelectItem key={s} value={s}>{s} salariés</SelectItem>
-                    ))}
-                  </SelectContent>
-                </Select>
-              </div>
-            </div>
-
-            <div className="space-y-1.5">
-              <Label className="text-sm font-medium">Principal enjeu RH</Label>
-              <Select value={data.mainChallenge} onValueChange={(v) => update("mainChallenge", v)}>
-                <SelectTrigger className="bg-background">
-                  <SelectValue placeholder="Sélectionnez votre enjeu principal" />
-                </SelectTrigger>
-                <SelectContent>
-                  {challenges.map((c) => (
-                    <SelectItem key={c} value={c}>{c}</SelectItem>
-                  ))}
-                </SelectContent>
-              </Select>
-            </div>
-
-            <div className="flex items-start gap-3 pt-2">
-              <Checkbox
-                id="consent"
-                checked={data.consent}
-                onCheckedChange={(v) => update("consent", !!v)}
-              />
-              <Label htmlFor="consent" className="text-sm text-muted-foreground leading-relaxed cursor-pointer">
-                J'accepte d'être recontacté par l'équipe LégiPilot
-              </Label>
-            </div>
-            {errors.consent && <p className="text-xs text-destructive">{errors.consent}</p>}
+            {field("email", "Email professionnel", "email")}
+            {field("phone", "Téléphone", "tel", false)}
+            {field("company", "Société")}
 
             <Button
               type="submit"
-              className="w-full bg-hero-gradient text-primary-foreground hover:opacity-90 py-6 text-base"
+              disabled={loading}
+              className="w-full h-12 bg-navy hover:bg-navy-deep text-white rounded-full font-medium text-base"
             >
-              Accéder à mon rapport détaillé
+              {loading ? "Génération du rapport…" : "Recevoir mon rapport détaillé"}
             </Button>
 
-            <div className="flex items-center justify-center gap-2 text-xs text-muted-foreground">
-              <Lock className="w-3 h-3" />
-              Vos données sont protégées conformément au RGPD et ne seront jamais partagées.
-            </div>
+            <p className="flex items-center justify-center gap-1.5 text-xs text-muted-foreground pt-1">
+              <ShieldCheck className="w-3 h-3" /> Données protégées · RGPD · Aucun spam
+            </p>
           </form>
         </div>
       </div>
