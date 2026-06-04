@@ -6,50 +6,56 @@
 
 @layer base {
   :root {
-    --background: 210 20% 98%;
-    --foreground: 220 25% 14%;
+    /* LégiPilot palette */
+    --background: 0 0% 100%;
+    --foreground: 217 45% 14%;
 
     --card: 0 0% 100%;
-    --card-foreground: 220 25% 14%;
+    --card-foreground: 217 45% 14%;
 
     --popover: 0 0% 100%;
-    --popover-foreground: 220 25% 14%;
+    --popover-foreground: 217 45% 14%;
 
-    --primary: 221 83% 53%;
+    /* Navy LégiPilot */
+    --primary: 217 55% 18%;
     --primary-foreground: 0 0% 100%;
 
-    --secondary: 210 40% 96%;
-    --secondary-foreground: 220 25% 14%;
+    /* Beige */
+    --secondary: 36 35% 92%;
+    --secondary-foreground: 217 55% 18%;
 
-    --muted: 210 30% 95%;
-    --muted-foreground: 215 16% 47%;
+    --muted: 210 20% 96%;
+    --muted-foreground: 217 15% 45%;
 
-    --accent: 221 83% 96%;
-    --accent-foreground: 221 83% 40%;
+    /* Light blue */
+    --accent: 210 100% 96%;
+    --accent-foreground: 212 90% 40%;
 
-    --destructive: 0 84% 60%;
+    --destructive: 0 75% 55%;
     --destructive-foreground: 0 0% 100%;
 
-    --border: 214 32% 91%;
-    --input: 214 32% 91%;
-    --ring: 221 83% 53%;
+    --border: 217 20% 90%;
+    --input: 217 20% 90%;
+    --ring: 212 90% 50%;
 
-    --radius: 0.75rem;
+    --radius: 1rem;
 
-    /* Custom tokens */
-    --hero-gradient: linear-gradient(135deg, hsl(221 83% 53%), hsl(221 83% 40%));
-    --surface-elevated: 0 0% 100%;
-    --surface-subtle: 210 25% 97%;
-    --success: 152 60% 42%;
+    /* Brand tokens */
+    --navy: 217 55% 18%;
+    --navy-deep: 217 60% 12%;
+    --sky: 212 95% 55%;
+    --sky-soft: 210 100% 96%;
+    --beige: 36 38% 88%;
+    --beige-soft: 36 40% 95%;
+
+    --success: 152 55% 40%;
     --success-foreground: 0 0% 100%;
-    --warning: 38 92% 50%;
+    --warning: 38 90% 50%;
     --warning-foreground: 0 0% 100%;
-    --info: 221 83% 53%;
-    --info-foreground: 0 0% 100%;
 
-    --shadow-card: 0 1px 3px 0 hsl(220 25% 14% / 0.04), 0 1px 2px -1px hsl(220 25% 14% / 0.04);
-    --shadow-elevated: 0 4px 6px -1px hsl(220 25% 14% / 0.06), 0 2px 4px -2px hsl(220 25% 14% / 0.04);
-    --shadow-lg: 0 10px 15px -3px hsl(220 25% 14% / 0.06), 0 4px 6px -4px hsl(220 25% 14% / 0.04);
+    --shadow-soft: 0 1px 2px hsl(217 45% 14% / 0.04), 0 1px 3px hsl(217 45% 14% / 0.03);
+    --shadow-card: 0 4px 12px -2px hsl(217 45% 14% / 0.06), 0 2px 6px -2px hsl(217 45% 14% / 0.04);
+    --shadow-elevated: 0 12px 32px -8px hsl(217 45% 14% / 0.10), 0 4px 12px -4px hsl(217 45% 14% / 0.05);
 
     --sidebar-background: 0 0% 98%;
     --sidebar-foreground: 240 5.3% 26.1%;
@@ -63,66 +69,49 @@
 }
 
 @layer base {
-  * {
-    @apply border-border;
-  }
-
+  * { @apply border-border; }
   body {
-    @apply bg-background text-foreground font-sans antialiased;
+    @apply bg-background text-foreground antialiased;
     font-family: 'Inter', system-ui, -apple-system, sans-serif;
+    font-feature-settings: 'cv11', 'ss01';
   }
-
   h1, h2, h3, h4, h5, h6 {
-    @apply tracking-tight font-bold;
+    @apply tracking-tight font-semibold text-foreground;
+    letter-spacing: -0.02em;
   }
 }
 
 @layer utilities {
-  .text-gradient {
-    @apply bg-clip-text text-transparent;
-    background-image: var(--hero-gradient);
-  }
+  .shadow-soft { box-shadow: var(--shadow-soft); }
+  .shadow-card { box-shadow: var(--shadow-card); }
+  .shadow-elevated { box-shadow: var(--shadow-elevated); }
 
-  .bg-hero-gradient {
-    background-image: var(--hero-gradient);
-  }
+  .bg-navy { background-color: hsl(var(--navy)); }
+  .bg-navy-deep { background-color: hsl(var(--navy-deep)); }
+  .bg-sky-soft { background-color: hsl(var(--sky-soft)); }
+  .bg-beige { background-color: hsl(var(--beige)); }
+  .bg-beige-soft { background-color: hsl(var(--beige-soft)); }
+  .text-navy { color: hsl(var(--navy)); }
+  .text-sky { color: hsl(var(--sky)); }
+  .border-navy { border-color: hsl(var(--navy)); }
 
-  .shadow-card {
-    box-shadow: var(--shadow-card);
-  }
-
-  .shadow-elevated {
-    box-shadow: var(--shadow-elevated);
-  }
-
-  .shadow-lg-custom {
-    box-shadow: var(--shadow-lg);
-  }
-
-  .animate-count {
-    animation: countUp 1s ease-out forwards;
-  }
-
-  @keyframes countUp {
-    from { opacity: 0; transform: translateY(10px); }
-    to { opacity: 1; transform: translateY(0); }
+  .bg-grid {
+    background-image:
+      linear-gradient(hsl(217 30% 92%) 1px, transparent 1px),
+      linear-gradient(90deg, hsl(217 30% 92%) 1px, transparent 1px);
+    background-size: 48px 48px;
+    mask-image: radial-gradient(ellipse at center, black 40%, transparent 75%);
   }
 
   @keyframes fadeInUp {
-    from { opacity: 0; transform: translateY(20px); }
+    from { opacity: 0; transform: translateY(12px); }
     to { opacity: 1; transform: translateY(0); }
   }
+  .animate-fade-in-up { animation: fadeInUp 0.5s ease-out forwards; }
 
-  .animate-fade-in-up {
-    animation: fadeInUp 0.6s ease-out forwards;
+  @keyframes scaleIn {
+    from { opacity: 0; transform: scale(0.96); }
+    to { opacity: 1; transform: scale(1); }
   }
-
-  @keyframes pulse-gentle {
-    0%, 100% { opacity: 1; }
-    50% { opacity: 0.7; }
-  }
-
-  .animate-pulse-gentle {
-    animation: pulse-gentle 2s ease-in-out infinite;
-  }
+  .animate-scale-in { animation: scaleIn 0.4s ease-out forwards; }
 }
