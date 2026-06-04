@@ -4,6 +4,7 @@ import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { Lock, ShieldCheck } from "lucide-react";
 import { trackEvent } from "@/lib/scoring";
+import { supabase } from "@/integrations/supabase/client";
 
 export interface LeadData {
   firstName: string;
@@ -44,15 +45,23 @@ export default function LeadForm({ onSubmit, context }: Props) {
     return Object.keys(e).length === 0;
   };
 
-  const handleSubmit = (ev: React.FormEvent) => {
+  const handleSubmit = async (ev: React.FormEvent) => {
     ev.preventDefault();
     if (!validate()) return;
     setLoading(true);
     trackEvent("lead_submitted", { ...data, ...context });
-    setTimeout(() => {
+    try {
+      const score = (context as any)?.score;
+      const { error } = await supabase.functions.invoke("hubspot-lead", {
+        body: { ...data, score, context },
+      });
+      if (error) console.error("hubspot-lead invoke error", error);
+    } catch (err) {
+      console.error("hubspot-lead error", err);
+    } finally {
       setLoading(false);
       onSubmit(data);
-    }, 300);
+    }
   };
 
   const field = (k: keyof LeadData, label: string, type = "text", required = true) => (
